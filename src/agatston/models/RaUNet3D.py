@@ -31,8 +31,8 @@ class RaUNet(L.LightningModule):
         self.__loss_function = DiceCELoss(to_onehot_y=True, softmax=True, ce_weight=torch.tensor([1, 3, 1, 1]))
         self.__metric = DiceMetric(include_background=False, reduction='mean', get_not_nans=False)
         self.optimizer = optimizer
-        self.__post_pred = Compose([EnsureType('tensor'), AsDiscrete(argmax=True, to_onehot=True, num_classes=4)])
-        self.__post_label = Compose([EnsureType('tensor'), AsDiscrete(to_onehot=True, num_classes=4)])
+        self.__post_pred = Compose([EnsureType('tensor'), AsDiscrete(argmax=True, to_onehot=4, num_classes=4)])
+        self.__post_label = Compose([EnsureType('tensor'), AsDiscrete(to_onehot=4, num_classes=4)])
         self.__best_val_dice = 0.0
         self.__best_val_epoch = 0
         self.__training_step_outputs = []

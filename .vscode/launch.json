@@ -44,7 +44,7 @@
                 "--setup_path",
                 "conf/setups/setup_0.yaml",
                 "--split_path",
-                "conf/splits/caScore.yaml",
+                "conf/splits/caScore.yaml"
             ],
             "presentation": {
                 "hidden": false,

@@ -12,14 +12,14 @@ class BinarizeLabelsd(MapTransform):
     def __init__(
         self,
         keys: KeysCollection,
-    ) -> torch.Tensor:
+    ) -> None:
         """
         Args:
             keys (KeysCollection): The key for the corresponding value.
         """
         MapTransform.__init__(self, keys)
 
-    def __call__(self, data):
+    def __call__(self, data) -> dict:
         d = dict(data)
         for key in self.key_iterator(d):
             d[key].set_array(np.where((d[key] == 10), 2, d[key]))

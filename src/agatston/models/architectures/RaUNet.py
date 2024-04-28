@@ -31,7 +31,7 @@ class ConvBlock(nn.Module):
                 in_channels=in_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size,
-                stride=strides,
+                strides=strides,
                 dropout=dropout,
                 padding=None,
                 norm=Norm.BATCH,
@@ -43,7 +43,7 @@ class ConvBlock(nn.Module):
                 in_channels=out_channels,
                 out_channels=out_channels,
                 kernel_size=kernel_size,
-                stride=1,
+                strides=1,
                 dropout=dropout,
                 padding=None,
                 norm=Norm.BATCH,
@@ -88,7 +88,7 @@ class UpConv(nn.Module):
             in_channels=out_channels,
             out_channels=out_channels,
             kernel_size=kernel_size,
-            stride=1,
+            strides=1,
             dropout=dropout,
             subunits=1,
             padding=None,
@@ -173,7 +173,6 @@ class AttentionLayer(nn.Module):
             spatial_dims=spatial_dims,
             in_channels=out_channels,
             out_channels=in_channels,
-            strides=strides,
             kernel_size=up_kernel_size,
         )
         self.merge = ResidualUnit(
@@ -185,9 +184,9 @@ class AttentionLayer(nn.Module):
         self.submodule = submodule
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        fromLower = self.upconv(self.submodule(x))
-        attention = self.attention(g=fromLower, x=x)
-        attention_cat = self.merge(torch.cat(attention, fromLower), dim=1)
+        from_lower = self.upconv(self.submodule(x))
+        attention = self.attention(g=from_lower, x=x)
+        attention_cat = self.merge(torch.cat(attention, from_lower), dim=1)
         return attention_cat
 
 
@@ -235,7 +234,6 @@ class AttentionResidualUNet(nn.Module):
             out_channels=out_channels,
             kernel_size=1,
             strides=1,
-            padding=0,
         )
 
         reduce_channels = ResidualUnit(

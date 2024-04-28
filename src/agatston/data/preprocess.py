@@ -20,7 +20,7 @@ from monai.transforms import (
 from tqdm import tqdm
 
 
-def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.3) -> None:
+def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.6) -> None:
     """
     Preprocess the images and labels according to the setup file and the split file and save them in the output
     directory defined in the setup file.
@@ -41,8 +41,8 @@ def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.3) -
 
     setup_number = int(Path(setup_path).name.split('.')[0].split('_')[-1])
 
-    split_type = list(datalist.keys())[0]
-    [name for name in datalist[split_type][0].keys() if name not in ['folder', 'images']]
+    # split_type = list(datalist.keys())[0]
+    # [name for name in datalist[split_type][0].keys() if name not in ['folder', 'images']]
 
     image_key = 'images'
     labels_key = 'labels'
@@ -66,7 +66,7 @@ def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.3) -
         logging.info(f'Folders {image_key} and {labels_key} already exist. The images will be overwritten.')
 
     for key in [image_key, labels_key]:
-        output = output_dir / key if key == image_key else output_dir / f'{key}_setups_{setup_number}'
+        output = output_dir / key if key == image_key else output_dir / f'{key}_setup_{setup_number}'
 
         save_operation = SaveImaged(
             keys=key,
@@ -78,12 +78,12 @@ def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.3) -
             resample=False,
             print_log=True,
         )
-        save_operations.append(save_operation)
+        save_operations += [save_operation]
 
     setup_specific_transformations = []
 
     if setup_number == 0:
-        setup_specific_transformations.append(CopyItemsd(keys=[labels_key], names=labels_key))
+        setup_specific_transformations += [CopyItemsd(keys=labels_key, names="plaques")]
 
     preprocessed_data_paths = {}
     transforms = Compose(basic_transformations + setup_specific_transformations + save_operations)
@@ -96,7 +96,7 @@ def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.3) -
 
         sample_dict = {
             image_key: str(output_dir / image_key / f'{id_}.nii.gz'),
-            labels_key: str(output_dir / f'{labels_key}_setups_{setup_number}' / f'{id_}.nii.gz'),
+            labels_key: str(output_dir / f'{labels_key}_setup_{setup_number}' / f'{id_}.nii.gz'),
         }
         preprocessed_data_paths[key] = preprocessed_data_paths.get(key, []) + [sample_dict]
 
