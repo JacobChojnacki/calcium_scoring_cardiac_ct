@@ -1,4 +1,3 @@
-import lightning
 import lightning as L
 
 from fire import Fire
@@ -9,7 +8,6 @@ def main():
     """
     Main function to train the model.
     """
-    L.seed_everything(42, workers=True)
     LightningCLI(
         L.LightningModule,
         L.LightningDataModule,

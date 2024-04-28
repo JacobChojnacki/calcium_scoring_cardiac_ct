@@ -83,7 +83,7 @@ def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.6) -
     setup_specific_transformations = []
 
     if setup_number == 0:
-        setup_specific_transformations += [CopyItemsd(keys=labels_key, names="plaques")]
+        setup_specific_transformations += [CopyItemsd(keys=labels_key, names='plaques')]
 
     preprocessed_data_paths = {}
     transforms = Compose(basic_transformations + setup_specific_transformations + save_operations)

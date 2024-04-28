@@ -22,13 +22,13 @@ class RaUNet(L.LightningModule):
             spatial_dims=3,
             in_channels=1,
             out_channels=4,
-            channels=(16, 32, 64, 128, 256),
-            strides=(2, 2, 2, 2),
+            channels=(16, 32, 64, 128),
+            strides=(2, 2, 2),
             kernel_size=3,
         )
 
         self.save_hyperparameters(self.hparams, ignore=['criterion'])
-        self.__loss_function = DiceCELoss(to_onehot_y=True, softmax=True, ce_weight=torch.tensor([1, 3, 1, 1]))
+        self.__loss_function = DiceCELoss(to_onehot_y=True, softmax=True, weight=torch.tensor([1, 3, 1, 1]))
         self.__metric = DiceMetric(include_background=False, reduction='mean', get_not_nans=False)
         self.optimizer = optimizer
         self.__post_pred = Compose([EnsureType('tensor'), AsDiscrete(argmax=True, to_onehot=4, num_classes=4)])
@@ -43,7 +43,7 @@ class RaUNet(L.LightningModule):
         return self._model(x)
 
     def configure_optimizers(self) -> Any:
-        optimizer = self.optimizer(self.parameters(), lr=self.hparams.lr, momentum=0.9, weight_decay=5e-4)
+        optimizer = self.optimizer(self.parameters())
         steps_per_epoch = 45000 // 256
         scheduler_dict = {
             'scheduler': OneCycleLR(

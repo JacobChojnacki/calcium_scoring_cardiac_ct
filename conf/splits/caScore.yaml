@@ -41,7 +41,7 @@ training:
   - TRV2P7
   - TRV2P8
 
-valid:
+validation:
 
   - TRV2P5
   - TEV4P1
