@@ -1,0 +1,56 @@
+{
+    "version": "0.5.0",
+    "configurations": [
+        {
+            "name": "Prepare Data",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.prepareData",
+            "args": ["--dataset_path", "data", "--output_path", "data/default"],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "presentation": {
+                "hidden": false,
+                "group": "1. Data",
+                "order": 1
+            }
+        },
+        {
+            "name": "Segment with TotalSegmentator",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.segmentWithTotalSegmentator",
+            "args": [
+                "--dataset_path", "data/images",
+                "--output_path", "data/segmentedTotalSegmentator",
+                "--total_segmentator_path", "data/Task417_heart_mixed_317subj.zip",
+                "--is_first_launch", "False"
+            ],
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "presentation": {
+                "hidden": false,
+                "group": "1. Data",
+                "order": 2
+            }
+        },
+        {
+            "name": "Preprocess",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "agatston.datasets.preprocess",
+            "args": [
+                "--setup_path",
+                "conf/setups/setup_0.yaml",
+                "--split_path",
+                "conf/splits/caScore.yaml",
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "2. Pipeline",
+                "order": 1
+            }
+        }
+    ]
+}

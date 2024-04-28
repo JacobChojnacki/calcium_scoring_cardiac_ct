@@ -1,0 +1,20 @@
+# Setup 0: First attempt
+
+# Training step output files will be saved there
+
+output_dir: /home/jakub/Developer/Studia/calcium_scoring_cardiac_ct/data/default/training/results/plaques
+
+# Preprocessing step output file with patgs to preprocessed dataset
+
+datalist: /home/jakub/Developer/Studia/calcium_scoring_cardiac_ct/data/default/configs/processed_paths_setup_0.yaml
+
+class_names: [background, labels, raw_plaques, aorta]
+
+images: /home/jakub/Developer/Studia/calcium_scoring_cardiac_ct/data/default/images
+
+labels:
+  - "/home/jakub/Developer/Studia/calcium_scoring_cardiac_ct/data/default/labels"
+raw_plaques:
+  - "/home/jakub/Developer/Studia/calcium_scoring_cardiac_ct/data/default/raw_plaques"
+aorta:
+  - "/home/jakub/Developer/Studia/calcium_scoring_cardiac_ct/data/default/aorta"
