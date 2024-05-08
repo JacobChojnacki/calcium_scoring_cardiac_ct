@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 from monai.transforms import (
     Compose,
@@ -20,6 +21,7 @@ class Transformations3D:
         self.transform = Compose(
             [
                 LoadImaged(keys=['images', 'labels']),
+                EnsureTyped(keys=['images', 'labels'], dtype=torch.float),
                 EnsureChannelFirstd(keys=['images', 'labels']),
                 RandCropByPosNegLabeld(
                     keys=['images', 'labels'],
@@ -42,7 +44,6 @@ class Transformations3D:
                     scale_range=(0.1, 0.1, 0.1),
                     padding_mode=GridSamplePadMode.REFLECTION,
                 ),
-                EnsureTyped(keys=['images', 'labels']),
                 ToTensord(keys=['images', 'labels']),
             ]
         )

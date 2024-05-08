@@ -56,7 +56,7 @@ class CalciumScore3DDataModule(L.LightningDataModule):
         self,
         cascore_path_yaml: Path,
         transforms: Optional[Callable],
-        batch_size: int,
+        batch_size: int = 1,
         cache_rate: float = 1.0,
         num_workers: int = 4,
     ):

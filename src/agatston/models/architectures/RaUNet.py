@@ -32,11 +32,11 @@ class ConvBlock(nn.Module):
                 out_channels=out_channels,
                 kernel_size=kernel_size,
                 strides=strides,
-                dropout=dropout,
                 padding=None,
-                norm=Norm.BATCH,
                 adn_ordering='NDA',
                 act='PRELU',
+                norm=Norm.BATCH,
+                dropout=dropout,
             ),
             ResidualUnit(
                 spatial_dims=spatial_dims,
@@ -44,11 +44,11 @@ class ConvBlock(nn.Module):
                 out_channels=out_channels,
                 kernel_size=kernel_size,
                 strides=1,
-                dropout=dropout,
                 padding=None,
-                norm=Norm.BATCH,
                 adn_ordering='NDA',
                 act='PRELU',
+                norm=Norm.BATCH,
+                dropout=dropout,
             ),
         ]
         self.conv = nn.Sequential(*layers)
@@ -65,18 +65,19 @@ class UpConv(nn.Module):
         in_channels: int,
         out_channels: int,
         kernel_size: int = 3,
-        #  strides:int = 2,
+        strides:int = 2,
         dropout=0.0,
     ) -> torch.Tensor:
         super().__init__()
-        self.up_sample = nn.Upsample(scale_factor=2, mode='nearest')
+        self.up_sample = nn.Upsample(scale_factor=2,
+                                     mode='nearest')
 
         self.conv = Convolution(
-            spatial_dims=spatial_dims,
-            in_channels=in_channels,
-            out_channels=out_channels,
-            kernel_size=kernel_size,
+            spatial_dims,
+            in_channels,
+            out_channels,
             strides=1,
+            kernel_size=kernel_size,
             act='PRELU',
             adn_ordering='NDA',
             norm=Norm.BATCH,
@@ -84,17 +85,16 @@ class UpConv(nn.Module):
             is_transposed=False,
         )
         self.ru = ResidualUnit(
-            spatial_dims=spatial_dims,
-            in_channels=out_channels,
-            out_channels=out_channels,
-            kernel_size=kernel_size,
+            spatial_dims,
+            out_channels,
+            out_channels,
             strides=1,
-            dropout=dropout,
+            kernel_size=kernel_size,
             subunits=1,
-            padding=None,
-            norm=Norm.BATCH,
-            adn_ordering='NDA',
             act='PRELU',
+            norm=Norm.BATCH,
+            dropout=dropout,
+            adn_ordering='NDA',
         )
         self.up = nn.Sequential(self.up_sample, self.conv, self.ru)
 
@@ -104,7 +104,12 @@ class UpConv(nn.Module):
 
 
 class AttentionBlock(nn.Module):
-    def __init__(self, spatial_dims: int, f_int: int, f_g: int, f_l: int, dropout=0.0):
+    def __init__(self,
+                 spatial_dims: int,
+                 f_int: int,
+                 f_g: int,
+                 f_l: int,
+                 dropout=0.0):
         super().__init__()
         self.W_g = nn.Sequential(
             ResidualUnit(
@@ -113,8 +118,8 @@ class AttentionBlock(nn.Module):
                 out_channels=f_int,
                 kernel_size=1,
                 strides=1,
-                dropout=dropout,
                 padding=0,
+                dropout=dropout,
             ),
             Norm[Norm.BATCH, spatial_dims](f_int),
         )
@@ -125,8 +130,8 @@ class AttentionBlock(nn.Module):
                 out_channels=f_int,
                 kernel_size=1,
                 strides=1,
-                dropout=dropout,
                 padding=0,
+                dropout=dropout,
             ),
             Norm[Norm.BATCH, spatial_dims](f_int),
         )
@@ -138,8 +143,8 @@ class AttentionBlock(nn.Module):
                 out_channels=1,
                 kernel_size=1,
                 strides=1,
-                dropout=dropout,
                 padding=0,
+                dropout=dropout,
             ),
             Norm[Norm.BATCH, spatial_dims](1),
             nn.Sigmoid(),
@@ -151,7 +156,7 @@ class AttentionBlock(nn.Module):
         g1 = self.W_g(g)
         x1 = self.W_x(x)
         psi: torch.Tensor = self.relu(g1 + x1)
-        return self.psi(psi) * x
+        return x * self.psi(psi)
 
 
 class AttentionLayer(nn.Module):
@@ -173,6 +178,7 @@ class AttentionLayer(nn.Module):
             spatial_dims=spatial_dims,
             in_channels=out_channels,
             out_channels=in_channels,
+            strides=strides,
             kernel_size=up_kernel_size,
         )
         self.merge = ResidualUnit(
@@ -186,7 +192,7 @@ class AttentionLayer(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         from_lower = self.upconv(self.submodule(x))
         attention = self.attention(g=from_lower, x=x)
-        attention_cat = self.merge(torch.cat(attention, from_lower), dim=1)
+        attention_cat = self.merge(torch.cat((attention, from_lower), dim=1))
         return attention_cat
 
 
@@ -214,8 +220,9 @@ class AttentionResidualUNet(nn.Module):
         out_channels: int,
         channels: Sequence[int],
         strides: Sequence[int],
-        kernel_size: int = 3,
-        up_kernel_size: int = 3,
+        kernel_size: Sequence[int] = 3,
+        up_kernel_size: Sequence[int] = 3,
+        num_res_units: int = 0,
         dropout: float = 0.0,
     ):
         super(AttentionResidualUNet, self).__init__()
@@ -226,14 +233,14 @@ class AttentionResidualUNet(nn.Module):
         self.channels = channels
         self.strides = strides
         self.kernel_size = kernel_size
+        self.num_res_units = num_res_units
         self.up_kernel_size = up_kernel_size
 
         head = ConvBlock(
             spatial_dims=spatial_dims,
-            in_channels=channels[0],
-            out_channels=out_channels,
-            kernel_size=1,
-            strides=1,
+            in_channels=in_channels,
+            out_channels=channels[0],
+            dropout=dropout,
         )
 
         reduce_channels = ResidualUnit(
@@ -259,7 +266,7 @@ class AttentionResidualUNet(nn.Module):
                             in_channels=channels[0],
                             out_channels=channels[1],
                             strides=strides[0],
-                            dropout=dropout,
+                            dropout=self.dropout,
                         ),
                         subblock,
                     ),

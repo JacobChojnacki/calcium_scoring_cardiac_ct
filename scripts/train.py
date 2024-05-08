@@ -14,6 +14,7 @@ def main():
         subclass_mode_data=True,
         subclass_mode_model=True,
         auto_configure_optimizers=False,
+        save_config_kwargs={"overwrite": True}
     )
 
 

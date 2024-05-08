@@ -4,11 +4,11 @@ fit:
     accelerator: "gpu"
     max_epochs: 2600
     logger:
-      class_path: lightning.pytorch.loggers.tensorboard.TensorBoardLogger
+      class_path: lightning.pytorch.loggers.wandb.WandbLogger
       init_args:
+        project: "masther_thesis"
         save_dir: /home/jakub/Developer/Magisterka/ai-lightning/logs/model_scores
-        name: lightning_logs
-        prefix: raunet
+        name: "raunet_3D"
     check_val_every_n_epoch: 50
     devices: [0]
     log_every_n_steps: 1
@@ -37,7 +37,7 @@ fit:
     class_path: agatston.data.calciumDataset3D.CalciumScore3DDataModule
     init_args:
       cascore_path_yaml: "/home/jakub/Developer/Magisterka/data/default/configs/processed_paths_setup_0.yaml"
-      batch_size: 4
+      batch_size: 1
       cache_rate: 1.0
       num_workers: 12
       transforms:

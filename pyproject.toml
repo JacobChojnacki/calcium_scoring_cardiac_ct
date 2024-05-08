@@ -17,7 +17,8 @@ dependencies = [
     "numpy ~= 1.24",
     "SimpleITK ~= 2.2.1",
     "fire",
-    "TotalSegmentator"
+    "TotalSegmentator",
+    "wandb"
 ]
 [project.urls]
 "Source" = "https://github.com/JacobChojnacki/calcium_scoring_cardiac_ct"

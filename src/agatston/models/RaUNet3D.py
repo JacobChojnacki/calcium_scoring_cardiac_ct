@@ -22,17 +22,18 @@ class RaUNet(L.LightningModule):
             spatial_dims=3,
             in_channels=1,
             out_channels=4,
-            channels=(16, 32, 64, 128),
-            strides=(2, 2, 2),
-            kernel_size=3,
+            channels=(16, 32, 64, 128, 256),
+            strides=(2, 2, 2, 2),
         )
 
         self.save_hyperparameters(self.hparams, ignore=['criterion'])
-        self.__loss_function = DiceCELoss(to_onehot_y=True, softmax=True, weight=torch.tensor([1, 3, 1, 1]))
+        self.__loss_function = DiceCELoss(to_onehot_y=True, softmax=True)
         self.__metric = DiceMetric(include_background=False, reduction='mean', get_not_nans=False)
         self.optimizer = optimizer
-        self.__post_pred = Compose([EnsureType('tensor'), AsDiscrete(argmax=True, to_onehot=4, num_classes=4)])
-        self.__post_label = Compose([EnsureType('tensor'), AsDiscrete(to_onehot=4, num_classes=4)])
+        self.__post_pred = Compose([EnsureType('tensor', device='cpu'),
+                                    AsDiscrete(argmax=True, to_onehot=4, num_classes=4)])
+        self.__post_label = Compose([EnsureType('tensor', device='cpu'),
+                                     AsDiscrete(to_onehot=4, num_classes=4)])
         self.__best_val_dice = 0.0
         self.__best_val_epoch = 0
         self.__training_step_outputs = []
@@ -77,9 +78,11 @@ class RaUNet(L.LightningModule):
 
     def evaluation_step(self, batch):
         images, labels = batch['images'], batch['labels']
+        labels = labels.to(torch.float32)
         roi_size = (96, 96, 96)
         sw_batch_size = 1
         outputs = sliding_window_inference(images, roi_size, sw_batch_size, self._model)
+        outputs = outputs.to(torch.float32)
         loss = self.__loss_function(outputs, labels)
         outputs = [self.__post_pred(i) for i in decollate_batch(outputs)]
         labels = [self.__post_label(i) for i in decollate_batch(labels)]
@@ -98,7 +101,7 @@ class RaUNet(L.LightningModule):
             num_items += output[f'{split}_number']
 
         mean_val_metric = self.__metric.aggregate().item()
-        self.mean_val_loss.reset()
+        self.__metric.reset()
         mean_val_loss = torch.tensor(val_loss / num_items)
         logs = {
             f'{split}_loss': mean_val_loss,
