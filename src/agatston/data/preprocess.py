@@ -1,6 +1,7 @@
 import logging
 
 from pathlib import Path
+from typing import Union
 
 import fire
 import yaml
@@ -10,6 +11,7 @@ from agatston.transforms.customTransforms import BinarizeLabelsd
 from monai.transforms import (
     Compose,
     CopyItemsd,
+    EnsureTyped,
     EnsureChannelFirstd,
     LoadImaged,
     Orientationd,
@@ -20,89 +22,146 @@ from monai.transforms import (
 from tqdm import tqdm
 
 
-def preprocess(setup_path: Path, split_path: Path, image_spacing: float = 0.6) -> None:
+class ImageProcessor:
     """
-    Preprocess the images and labels according to the setup file and the split file and save them in the output
-    directory defined in the setup file.
-
-    Args:
-        setup_path (Path): setup file containing the setup parameters like "class_names" and "labels"
-        split_path (Path): split file containing the split
-        image_spacing (float, optional): image spacing. Defaults to 0.3.
+    Class to process medical images.
     """
-    with open(setup_path, 'r') as file:
-        setup = yaml.safe_load(file)
 
-    datalist = get_datalist_for_training(setup, split_path)
+    def __init__(
+        self,
+        setup_path: Union[str, Path],
+        split_path: Union[str, Path],
+        image_spacing: float = None,
+        output_dir: Union[str, Path] = "/home/jakub/Developer/Magisterka/saves",
+        output_ext: str = ".nii.gz",
+        writer: str = "NibabelWriter",
+        resample: bool = False,
+        print_log: bool = True
+    ):
+        """
+        Initialize ImageProcessor instance.
 
-    datalist_path = Path(setup['datalist'])
-    output_dir = datalist_path.parent
-    datalist_path.parent.mkdir(exist_ok=True, parents=True)
+        Args:
+            setup_path: Path to the setup data.
+            split_path: Path to the split data.
+            image_spacing: Spacing for image resizing.
+            output_dir: Directory to save processed images.
+            output_ext: Extension for the output images.
+            writer: Image writer type.
+            resample: Whether to resample images.
+            print_log: Whether to print log messages.
+        """
+        self.setup_path = Path(setup_path)
+        self.split_path = Path(split_path)
+        self.image_spacing = image_spacing
+        self.output_dir = output_dir
+        self.output_ext = output_ext
+        self.writer = writer
+        self.resample = resample
+        self.print_log = print_log
 
-    setup_number = int(Path(setup_path).name.split('.')[0].split('_')[-1])
+        self._image_key = 'images'
+        self._labels_key = 'labels'
+        self._raw_plaque_key = 'raw_plaques' if self.image_spacing is None else None
+        self._transformations = [
+            LoadImaged(keys=[self._image_key, self._labels_key]),
+            EnsureTyped(keys=[self._image_key, self._labels_key]),
+            EnsureChannelFirstd(keys=[self._image_key, self._labels_key]),
+            BinarizeLabelsd(keys=self._labels_key),
+            Spacingd(keys=[self._image_key, self._labels_key],
+                     pixdim=(self.image_spacing, self.image_spacing, self.image_spacing)),
+            Orientationd(keys=[self._image_key, self._labels_key], axcodes='RAS'),
+            SaveImaged(
+                keys=[self._image_key],
+                output_postfix="",
+                output_dir=self.output_dir,
+                output_ext=self.output_ext,
+                writer=self.writer,
+                resample=self.resample,
+                print_log=self.print_log
+            ),
+            ScaleIntensityRanged(keys=[self._image_key], a_min=-200, a_max=1300, b_min=0, b_max=1, clip=True),
+        ] if self._raw_plaque_key is None else [
+            LoadImaged(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
+            EnsureTyped(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
+            EnsureChannelFirstd(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
+            BinarizeLabelsd(keys=[self._labels_key, self._raw_plaque_key]),
+            Orientationd(keys=[self._image_key, self._labels_key, self._raw_plaque_key], axcodes='RAS'),
+            SaveImaged(
+                keys=[self._image_key],
+                output_postfix="",
+                output_dir=self.output_dir,
+                output_ext=self.output_ext,
+                writer=self.writer,
+                resample=self.resample,
+                print_log=self.print_log
+            ),
+            ScaleIntensityRanged(keys=[self._image_key], a_min=-200, a_max=1300, b_min=0, b_max=1, clip=True),
+        ]
 
-    # split_type = list(datalist.keys())[0]
-    # [name for name in datalist[split_type][0].keys() if name not in ['folder', 'images']]
+        self.basic_transformations = self._transformations
 
-    image_key = 'images'
-    labels_key = 'labels'
-    # raw_plaques_key = "raw_plaques"
-    basic_transformations = [
-        LoadImaged(keys=[image_key, labels_key]),
-        EnsureChannelFirstd(keys=[image_key, labels_key]),
-        BinarizeLabelsd(keys=labels_key),
-        Spacingd(
-            keys=[image_key, labels_key],
-            pixdim=(image_spacing, image_spacing, image_spacing),
-            mode=('bilinear', 'nearest'),
-        ),
-        Orientationd(keys=[image_key, labels_key], axcodes='RAS'),
-        ScaleIntensityRanged(keys=[image_key], a_min=-200, a_max=1300, b_min=0, b_max=1, clip=True),
-    ]
+    def preprocess(self) -> None:
+        with open(self.setup_path, 'r') as file:
+            setup = yaml.safe_load(file)
 
-    save_operations = []
+        datalist = get_datalist_for_training(setup, self.split_path)
 
-    if (output_dir / image_key).exists():
-        logging.info(f'Folders {image_key} and {labels_key} already exist. The images will be overwritten.')
+        datalist_path = Path(setup['datalist'])
+        output_dir = datalist_path.parent
+        output_dir.mkdir(exist_ok=True, parents=True)
 
-    for key in [image_key, labels_key]:
-        output = output_dir / key if key == image_key else output_dir / f'{key}_setup_{setup_number}'
+        setup_number = int(Path(self.setup_path).stem.split('_')[-1])
+        save_operations = []
+        keys_to_process = [self._image_key, self._labels_key]
+        if self.image_spacing is None:
+            keys_to_process.append(self._raw_plaque_key)
 
-        save_operation = SaveImaged(
-            keys=key,
-            output_postfix='',
-            output_dir=output,
-            output_ext='.nii.gz',
-            writer='NibabelWriter',
-            separate_folder=False,
-            resample=False,
-            print_log=True,
-        )
-        save_operations += [save_operation]
+        for key in keys_to_process:
+            output = output_dir / f'{key}_setup_{setup_number}' if key != self._image_key else output_dir / key
 
-    setup_specific_transformations = []
+            save_operation = SaveImaged(
+                keys=key,
+                output_postfix='',
+                output_dir=output,
+                output_ext='.nii.gz',
+                writer='NibabelWriter',
+                separate_folder=False,
+                resample=False,
+                print_log=True,
+            )
+            save_operations.append(save_operation)
 
-    if setup_number == 0:
-        setup_specific_transformations += [CopyItemsd(keys=labels_key, names='plaques')]
+        if (output_dir / self._image_key).exists():
+            logging.info(
+                f'Folders {self._image_key} and {self._labels_key} already exist. The images will be overwritten.')
 
-    preprocessed_data_paths = {}
-    transforms = Compose(basic_transformations + setup_specific_transformations + save_operations)
+        setup_specific_transformations = []
 
-    for batch in tqdm(sum(list(datalist.values()), []), desc='Preprocessing'):
-        transforms(batch)
+        if setup_number == 0:
+            setup_specific_transformations += [CopyItemsd(keys=self._labels_key, names='plaques')]
 
-        key = list(datalist.keys())[batch['folder']]
-        id_ = Path(batch[image_key]).name.split('.')[0]
+        preprocessed_data_paths = {}
+        transforms = Compose(self.basic_transformations + setup_specific_transformations + save_operations)
 
-        sample_dict = {
-            image_key: str(output_dir / image_key / f'{id_}.nii.gz'),
-            labels_key: str(output_dir / f'{labels_key}_setup_{setup_number}' / f'{id_}.nii.gz'),
-        }
-        preprocessed_data_paths[key] = preprocessed_data_paths.get(key, []) + [sample_dict]
+        for batch in tqdm(sum(list(datalist.values()), []), desc='Preprocessing'):
+            transforms(batch)
 
-    with open(datalist_path, 'w') as file:
-        yaml.safe_dump(preprocessed_data_paths, file)
+            key = list(datalist.keys())[batch['folder']]
+            id_ = Path(batch[self._image_key]).name.split('.')[0]
+            sample_dict = {
+                self._image_key: str(output_dir / self._image_key / f'{id_}.nii.gz'),
+                self._labels_key: str(output_dir / f'{self._labels_key}_setup_{setup_number}' / f'{id_}.nii.gz'),
+            }
+            if self.image_spacing is None:
+                sample_dict[self._raw_plaque_key] = str(
+                    output_dir / f'{self._raw_plaque_key}_setup_{setup_number}' / f'{id_}.nii.gz'),
+
+            preprocessed_data_paths[key] = preprocessed_data_paths.get(key, []) + [sample_dict]
+
+        with open(datalist_path, 'w') as file:
+            yaml.safe_dump(preprocessed_data_paths, file)
 
 
 if __name__ == '__main__':
-    fire.Fire(preprocess)
+    fire.Fire(ImageProcessor)

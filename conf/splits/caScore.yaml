@@ -1,52 +1,52 @@
 training:
-  - TEV1P1
+#  - TEV1P1 no plaque
   - TEV1P2
-  - TEV1P3
-  - TEV1P4
-  - TEV1P5
-  - TEV1P6
-  - TEV1P7
-  - TEV1P8
-  - TEV2P1
-  - TEV2P2
-  - TEV2P3
-  - TEV2P4
-  - TEV2P6
-  - TEV2P7
-  - TEV2P8
-  - TEV3P1
-  - TEV3P2
-  - TEV3P3
-  - TEV3P4
-  - TEV3P5
-  - TEV3P6
-  - TEV3P7
-  - TEV3P8
-  - TEV4P2
-  - TEV4P3
-  - TEV4P4
-  - TEV4P5
-  - TEV4P6
-  - TEV4P7
-  - TEV4P8
-  - TRV1P1
-  - TRV1P2
-  - TRV1P7
-  - TRV1P8
-  - TRV2P1
-  - TRV2P2
-  - TRV2P3
-  - TRV2P4
-  - TRV2P6
-  - TRV2P7
-  - TRV2P8
+#  - TEV1P3
+#  - TEV1P4
+#  - TEV1P5 no plaque
+#  - TEV1P6
+#  - TEV1P7
+#  - TEV1P8
+#  - TEV2P1 no plaque
+#  - TEV2P2
+#  - TEV2P3
+#  - TEV2P4
+#  - TEV2P6
+#  - TEV2P7
+#  - TEV2P8 no plaque
+#  - TEV3P1
+#  - TEV3P2 no plaque
+#  - TEV3P3
+#  - TEV3P4
+#  - TEV3P5 no plaque
+#  - TEV3P6
+#  - TEV3P7
+#  - TEV3P8
+#  - TEV4P2 no plaque
+#  - TEV4P3
+#  - TEV4P4
+#  - TEV4P5
+#  - TEV4P6
+#  - TEV4P7
+#  - TEV4P8
+#  - TRV1P1 no plaque
+#  - TRV1P2 no plaque
+#  - TRV1P7
+#  - TRV1P8
+#  - TRV2P1 no plaque
+#  - TRV2P2
+#  - TRV2P3
+#  - TRV2P4
+#  - TRV2P6
+#  - TRV2P7
+#  - TRV2P8
 
 validation:
 
-  - TRV2P5
-  - TEV4P1
-  - TEV2P5
-  - TRV1P3
-  - TRV1P4
-  - TRV1P5
+#  - TRV2P5 no plaque
+#  - TEV4P1 no plaque
+#  - TEV2P5
+#  - TRV1P3
+#  - TRV1P4
+#  - TRV1P5
   - TRV1P6

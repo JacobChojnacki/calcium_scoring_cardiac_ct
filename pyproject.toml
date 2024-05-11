@@ -18,7 +18,8 @@ dependencies = [
     "SimpleITK ~= 2.2.1",
     "fire",
     "TotalSegmentator",
-    "wandb"
+    "wandb",
+    "jsonargparse[signatures]>=4.27.7"
 ]
 [project.urls]
 "Source" = "https://github.com/JacobChojnacki/calcium_scoring_cardiac_ct"

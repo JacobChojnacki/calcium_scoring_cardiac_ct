@@ -47,7 +47,7 @@ def get_datalist_for_training(setup: dict[str, Any], split_path: Path) -> dict[s
     with open(split_path, 'r') as file:
         splits = yaml.safe_load(file)
 
-    assert all(name in splits.keys() for name in ['training', 'valid'])
+    assert all(name in splits.keys() for name in ['training', 'validation'])
     assert 'images' in setup.keys() and 'labels' in setup.keys()
 
     return create_training_datalist(setup, splits)

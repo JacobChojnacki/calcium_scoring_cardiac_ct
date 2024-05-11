@@ -6,7 +6,6 @@ import torch
 
 from agatston.models.architectures.RaUNet import AttentionResidualUNet
 from lightning.pytorch.cli import OptimizerCallable
-from monai.data import decollate_batch
 from monai.inferers import sliding_window_inference
 from monai.losses import DiceCELoss
 from monai.metrics import DiceMetric
@@ -14,9 +13,9 @@ from monai.transforms import AsDiscrete, Compose, EnsureType
 from torch.optim.lr_scheduler import OneCycleLR
 
 
-class RaUNet(L.LightningModule):
+class RaUNet3D(L.LightningModule):
     def __init__(self, optimizer: OptimizerCallable = torch.optim.AdamW):
-        super(RaUNet, self).__init__()
+        super(RaUNet3D, self).__init__()
         self.optimizer = optimizer
         self._model = AttentionResidualUNet(
             spatial_dims=3,
@@ -27,18 +26,18 @@ class RaUNet(L.LightningModule):
         )
 
         self.save_hyperparameters(self.hparams, ignore=['criterion'])
-        self.__loss_function = DiceCELoss(to_onehot_y=True, softmax=True)
-        self.__metric = DiceMetric(include_background=False, reduction='mean', get_not_nans=False)
+        self.loss_function = DiceCELoss(to_onehot_y=True, softmax=True, weight=torch.tensor([1, 3, 1, 1]))
+        self.metric = DiceMetric(include_background=False, reduction='mean', get_not_nans=False)
         self.optimizer = optimizer
-        self.__post_pred = Compose([EnsureType('tensor', device='cpu'),
+        self.post_pred = Compose([EnsureType('tensor'),
                                     AsDiscrete(argmax=True, to_onehot=4, num_classes=4)])
-        self.__post_label = Compose([EnsureType('tensor', device='cpu'),
+        self.post_label = Compose([EnsureType('tensor'),
                                      AsDiscrete(to_onehot=4, num_classes=4)])
-        self.__best_val_dice = 0.0
-        self.__best_val_epoch = 0
-        self.__training_step_outputs = []
-        self.__validation_step_outputs = []
-        self.__test_step_outputs = []
+        self.best_val_dice = 0.0
+        self.best_val_epoch = 0
+        self.training_step_outputs = []
+        self.validation_step_outputs = []
+        self.test_step_outputs = []
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self._model(x)
@@ -61,63 +60,59 @@ class RaUNet(L.LightningModule):
         images, labels = batch['images'], batch['labels']
 
         outputs = self.forward(images)
-        loss = self.__loss_function(outputs, labels)
-        metric = self.__metric(outputs, labels)
+        loss = self.loss_function(outputs, labels)
+        metric = self.metric(outputs, labels)
         logs = {'train_loss': loss.item(), 'train_dice': metric}
         d = {'loss': loss, 'log': logs, 'progress_bar': logs}
-        self.__training_step_outputs.append(d)
+        self.training_step_outputs.append(d)
         return d
 
     def on_train_epoch_end(self) -> None:
-        train_loss = np.mean([x['log']['train_loss'].item() for x in self.__training_step_outputs])
-        train_dice = np.mean([x['log']['train_dice'] for x in self.__training_step_outputs])
+        train_loss = np.mean([x['log']['train_loss'] for x in self.training_step_outputs])
+        train_dice = np.mean([torch.Tensor.cpu(x['log']['train_dice']) for x in self.training_step_outputs])
         self.log('train_loss', train_loss, sync_dist=True)
         self.log('train_dice', train_dice, sync_dist=True)
         self.logger.log_metrics({'train_loss': train_loss, 'train_dice': train_dice}, step=self.trainer.current_epoch)
-        self.__training_step_outputs.clear()
+        self.training_step_outputs.clear()
 
     def evaluation_step(self, batch):
         images, labels = batch['images'], batch['labels']
-        labels = labels.to(torch.float32)
         roi_size = (96, 96, 96)
         sw_batch_size = 1
         outputs = sliding_window_inference(images, roi_size, sw_batch_size, self._model)
-        outputs = outputs.to(torch.float32)
-        loss = self.__loss_function(outputs, labels)
-        outputs = [self.__post_pred(i) for i in decollate_batch(outputs)]
-        labels = [self.__post_label(i) for i in decollate_batch(labels)]
-        metric = self.__metric(outputs, labels)
-        return {'val_loss': loss, 'val_dice': metric, 'val_number': len(outputs)}
+        loss = self.loss_function(outputs, labels)
+        metric = self.metric(y_pred=outputs, y=labels)
+        return outputs, loss, metric, len(outputs)
 
     def validation_step(self, batch, batch_idx):
-        outputs = self.evaluation_step(batch)
-        self.__validation_step_outputs.append(outputs)
+        outputs, loss, metric, num_items = self.evaluation_step(batch)
+        self.validation_step_outputs.append({"val_loss": loss, "val_number": num_items})
         return outputs
 
-    def evaluation_epoch_end(self, outputs, split='val'):
+    def evaluation_epoch_end(self, outputs):
         val_loss, num_items = 0, 0
         for output in outputs:
-            val_loss += output[f'{split}_loss'].sum().item()
-            num_items += output[f'{split}_number']
+            val_loss += output['val_loss'].sum().item()
+            num_items += output['val_number']
 
-        mean_val_metric = self.__metric.aggregate().item()
-        self.__metric.reset()
+        mean_val_metric = self.metric.aggregate().item()
+        self.metric.reset()
         mean_val_loss = torch.tensor(val_loss / num_items)
         logs = {
-            f'{split}_loss': mean_val_loss,
-            f'{split}_dice': mean_val_metric,
+            'val_loss': mean_val_loss,
+            'val_dice': mean_val_metric,
         }
-        if mean_val_metric > self.__best_val_dice:
-            self.__best_val_dice = mean_val_metric
-            self.__best_val_epoch = self.current_epoch
+        if mean_val_metric > self.best_val_dice:
+            self.best_val_dice = mean_val_metric
+            self.best_val_epoch = self.current_epoch
         print(
-            f'Current epoch: {self.current_epoch}, Best epoch: {self.__best_val_epoch}, \
-                Best val dice: {self.__best_val_dice} at epoch {self.__best_val_epoch}'
+            f'Current epoch: {self.current_epoch},\n Best epoch: {self.best_val_epoch}, \n\
+                Best val dice: {self.best_val_dice} at epoch {self.best_val_epoch}'
         )
         self.log_dict(logs, sync_dist=True)
         self.logger.log_metrics(logs, step=self.trainer.current_epoch)
-        return {'log': logs, 'progress_bar': logs}
+        return {'log': logs}
 
     def on_validation_epoch_end(self) -> None:
-        self.evaluation_epoch_end(self.__validation_step_outputs, 'val')
-        self.__validation_step_outputs.clear()
+        self.evaluation_epoch_end(self.validation_step_outputs)
+        self.validation_step_outputs.clear()

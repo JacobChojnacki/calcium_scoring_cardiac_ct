@@ -37,7 +37,7 @@ def make_calcium_dataset(
     return CacheDataset(data=data, transform=transforms, cache_rate=cache_rate)
 
 
-class CalciumScore3DDataModule(L.LightningDataModule):
+class CalciumScoreDataModule(L.LightningDataModule):
     """
     Lightning DataModule for calcium scoring.
 
@@ -55,7 +55,8 @@ class CalciumScore3DDataModule(L.LightningDataModule):
     def __init__(
         self,
         cascore_path_yaml: Path,
-        transforms: Optional[Callable],
+        transforms_train: Optional[Callable],
+        transforms_val: Optional[Callable],
         batch_size: int = 1,
         cache_rate: float = 1.0,
         num_workers: int = 4,
@@ -65,7 +66,8 @@ class CalciumScore3DDataModule(L.LightningDataModule):
         self.val_dataset = None
         self.train_dataset = None
         self.cascore_path_yaml = cascore_path_yaml
-        self.transforms = transforms
+        self.transforms_train = transforms_train
+        self.transforms_val = transforms_val
         self.batch_size = batch_size
         self.cache_rate = cache_rate
         self.num_workers = num_workers
@@ -75,20 +77,20 @@ class CalciumScore3DDataModule(L.LightningDataModule):
             self.train_dataset = make_calcium_dataset(
                 self.cascore_path_yaml,
                 is_training_set=True,
-                transforms=self.transforms,
+                transforms=self.transforms_train,
                 cache_rate=self.cache_rate,
             )
-            self.valDataset = make_calcium_dataset(
+            self.val_dataset = make_calcium_dataset(
                 self.cascore_path_yaml,
                 is_training_set=False,
-                transforms=self.transforms,
+                transforms=self.transforms_val,
                 cache_rate=self.cache_rate,
             )
         elif stage == 'test' or stage is None:
             self.test_dataset = make_calcium_dataset(
                 self.cascore_path_yaml,
                 is_training_set=False,
-                transforms=self.transforms,
+                transforms=self.transforms_val,
                 cache_rate=self.cache_rate,
             )
 
@@ -96,7 +98,7 @@ class CalciumScore3DDataModule(L.LightningDataModule):
         return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
-        return DataLoader(self.valDataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
+        return DataLoader(self.val_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
 
     def test_dataloader(self) -> EVAL_DATALOADERS:
         return DataLoader(self.test_dataset, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
