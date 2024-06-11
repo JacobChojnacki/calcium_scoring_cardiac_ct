@@ -11,8 +11,8 @@ from agatston.transforms.customTransforms import BinarizeLabelsd
 from monai.transforms import (
     Compose,
     CopyItemsd,
-    EnsureTyped,
     EnsureChannelFirstd,
+    EnsureTyped,
     LoadImaged,
     Orientationd,
     SaveImaged,
@@ -32,7 +32,7 @@ class ImageProcessor:
         setup_path: Union[str, Path],
         split_path: Union[str, Path],
         image_spacing: float = None,
-        output_dir: Union[str, Path] = "/home/jakub/Developer/Magisterka/saves",
+        output_dir: Union[str, Path] = "/home/jacob/Developer/others/saves",
         output_ext: str = ".nii.gz",
         writer: str = "NibabelWriter",
         resample: bool = False,
@@ -69,7 +69,9 @@ class ImageProcessor:
             EnsureChannelFirstd(keys=[self._image_key, self._labels_key]),
             BinarizeLabelsd(keys=self._labels_key),
             Spacingd(keys=[self._image_key, self._labels_key],
-                     pixdim=(self.image_spacing, self.image_spacing, self.image_spacing)),
+                     pixdim=(self.image_spacing, self.image_spacing, self.image_spacing),
+                     mode=('bilinear', 'nearest')
+            ),
             Orientationd(keys=[self._image_key, self._labels_key], axcodes='RAS'),
             SaveImaged(
                 keys=[self._image_key],

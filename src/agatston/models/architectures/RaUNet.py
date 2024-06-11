@@ -102,7 +102,6 @@ class UpConv(nn.Module):
         x_up: torch.Tensor = self.up(x)
         return x_up
 
-
 class AttentionBlock(nn.Module):
     def __init__(self,
                  spatial_dims: int,

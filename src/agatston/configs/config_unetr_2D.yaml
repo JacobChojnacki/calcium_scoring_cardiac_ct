@@ -7,7 +7,7 @@ trainer:
       init_args:
         project: "master_thesis"
         save_dir: /home/jacob/Developer/Hemolens/plaques/others/ai-lightning/logs/model_scores
-        name: "raunet_3D"
+        name: "unetr_2D"
         log_model: "all"
   check_val_every_n_epoch: 50
   devices: [0]
@@ -24,7 +24,7 @@ trainer:
         logging_interval: 'epoch'
     - class_path: agatston.callbacks.CustomCallback.LogPredictionsCallback
 model:
-  class_path: agatston.models.RaUNet3D.RaUNet3D
+  class_path: agatston.models.UNETR2D.UNETR2D
   init_args:
     optimizer:
       class_path: torch.optim.AdamW
@@ -33,11 +33,11 @@ model:
 data:
   class_path: agatston.data.calcium_dataset.CalciumScoreDataModule
   init_args:
-    cascore_path_yaml:  "/home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/configs/processed_paths_setup_0.yaml"
-    batch_size: 1
+    cascore_path_yaml: "/home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/configs/processed_paths_setup_0.yaml"
+    batch_size: 6
     cache_rate: 1.0
     num_workers: 15
     transforms_train:
-      class_path: agatston.transforms.standardTransforms.Transformations3D
+      class_path: agatston.transforms.standardTransforms.Transformations2D
     transforms_val:
       class_path: agatston.transforms.standardTransforms.TransformationsVal

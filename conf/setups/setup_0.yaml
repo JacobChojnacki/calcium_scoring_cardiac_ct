@@ -2,19 +2,19 @@
 
 # Training step output files will be saved there
 
-output_dir: /home/jakub/Developer/Magisterka/data/default/training/results/plaques
+output_dir: /home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/training/results/plaques
 
 # Preprocessing step output file with patgs to preprocessed dataset
 
-datalist: /home/jakub/Developer/Magisterka/data/default/configs/processed_paths_setup_0.yaml
+datalist: /home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/configs/processed_paths_setup_0.yaml
 
 class_names: [background, labels, raw_plaques, aorta]
 
-images: /home/jakub/Developer/Magisterka/data/default/images
+images: /home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/images
 
 labels:
-  - "/home/jakub/Developer/Magisterka/data/default/labels"
+  - "/home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/labels"
 raw_plaques:
-  - "/home/jakub/Developer/Magisterka/data/default/raw_plaques"
+  - "/home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/raw_plaques"
 aorta:
-  - "/home/jakub/Developer/Magisterka/data/default/aorta"
+  - "/home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/./dataCaScore/default/aorta"

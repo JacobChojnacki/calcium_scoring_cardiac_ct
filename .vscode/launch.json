@@ -6,7 +6,7 @@
             "type": "debugpy",
             "request": "launch",
             "module": "scripts.prepareData",
-            "args": ["--dataset_path", "data", "--output_path", "data/default"],
+            "args": ["--dataset_path", "./dataCaScore", "--output_path", "./dataCaScore/default"],
             "console": "integratedTerminal",
             "justMyCode": false,
             "cwd": "${workspaceFolder}",
@@ -22,9 +22,9 @@
             "request": "launch",
             "module": "scripts.segmentWithTotalSegmentator",
             "args": [
-                "--dataset_path", "data/images",
-                "--output_path", "data/segmentedTotalSegmentator",
-                "--total_segmentator_path", "data/Task417_heart_mixed_317subj.zip",
+                "--dataset_path", "./dataimages",
+                "--output_path", "./datasegmentedTotalSegmentator",
+                "--total_segmentator_path", "./dataTask417_heart_mixed_317subj.zip",
                 "--is_first_launch", "False"
             ],
             "justMyCode": false,
@@ -36,20 +36,57 @@
             }
         },
         {
-            "name": "Preprocess",
+            "name": "Preprocess 2D",
             "type": "debugpy",
             "request": "launch",
-            "module": "agatston.datasets.preprocess",
+            "module": "agatston.data.preprocess",
             "args": [
                 "--setup_path",
                 "conf/setups/setup_0.yaml",
                 "--split_path",
-                "conf/splits/caScore.yaml"
+                "conf/splits/caScore.yaml",
+                "preprocess",
             ],
             "presentation": {
                 "hidden": false,
                 "group": "2. Pipeline",
                 "order": 1
+            }
+        },
+        {
+            "name": "Preprocess 3D",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "agatston.data.preprocess",
+            "args": [
+                "--setup_path",
+                "conf/setups/setup_0.yaml",
+                "--split_path",
+                "conf/splits/caScore.yaml",
+                "--image_spacing",
+                "0.3",
+                "preprocess",
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "2. Pipeline",
+                "order": 2
+            }
+        },
+        {
+            "name": "Train",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.train",
+            "args": [
+                "fit",
+                "--config",
+                "/home/jacob/Developer/Hemolens/plaques/calcium_scoring_cardiac_ct/src/agatston/configs/config_unet_2D.yaml"
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "2. Pipeline",
+                "order": 3
             }
         }
     ]
