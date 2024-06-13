@@ -43,7 +43,6 @@ class Transformations3D:
 class TransformationsVal:
     def __init__(self):
         self.transform = Compose(
-
             [
                 LoadImaged(keys=['images', 'labels']),
                 EnsureTyped(keys=['images', 'labels'], dtype=torch.float),

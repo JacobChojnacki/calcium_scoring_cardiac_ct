@@ -1,9 +1,10 @@
 from pathlib import Path
 
+import fire
 import numpy as np
 import scipy
 
-from agatston.utils import simpleITK_read
+from agatston.utils import simple_itk_read
 
 
 def density_factor(image: np.ndarray, mask: float) -> float:
@@ -30,36 +31,38 @@ def density_factor(image: np.ndarray, mask: float) -> float:
         return 3 * mask
     elif max_hu >= 400:
         return 4 * mask
+    else:
+        return 0
 
 
 def agatston_score(
     image_path: Path = None,
     mask_path: Path = None,
-    isCalciumVolume: bool = False,
+    is_calcium_volume: bool = False,
 ):
     """Calculates the Agatston score based on DOI: 10.1118/1.4945696.
 
     Args:
         image_path (Path, optional): _description_. Defaults to None.
         mask_path (Path, optional): _description_. Defaults to None.
-        isCalciumVolume (bool, optional): _description_. Defaults to False.
+        is_calcium_volume (bool, optional): _description_. Defaults to False.
     """
     agatston_score = 0
 
-    if isCalciumVolume:
-        mask, mask_spacing, mask_origin = simpleITK_read(mask_path)
+    if is_calcium_volume:
+        mask, mask_spacing, _ = simple_itk_read(mask_path)
         mask[mask > 1] = 1
         mask = mask.astype(np.float32)
         calcium_volume = 0
     else:
-        image, image_spacing, image_origin = simpleITK_read(image_path)
-        mask, mask_spacing, mask_origin = simpleITK_read(mask_path)
+        image, _, _ = simple_itk_read(image_path)
+        mask, mask_spacing, _ = simple_itk_read(mask_path)
         mask[mask > 1] = 1
 
     mask_volume = np.prod(mask_spacing)
 
     for slice in range(mask.shape[0]):
-        if isCalciumVolume:
+        if is_calcium_volume:
             mask_slice = mask[slice]
         else:
             mask_slice = mask[slice]
@@ -69,18 +72,22 @@ def agatston_score(
 
         if num_slice_labels > 0:
             for label_count in range(1, num_slice_labels + 1):
-                label = np.zeros_like(mask_slice.shape)
+                label = np.zeros_like(mask_slice)
                 label[mask_slice_label == label_count] = 1
-                if isCalciumVolume:
+                if is_calcium_volume:
                     calcium_volume += np.sum(label) * mask_volume
                 else:
                     cluster_volume = image_slice * label
 
-                    if np.sum(cluster_volume) > 3:
+                    if np.sum(cluster_volume) < 3:
                         continue
 
                     roi_area = np.sum(label)
                     agatston_score += round(density_factor(cluster_volume, roi_area), 3)
-    if isCalciumVolume:
+    if is_calcium_volume:
         return calcium_volume
     return agatston_score
+
+
+if __name__ == '__main__':
+    fire.Fire(agatston_score)

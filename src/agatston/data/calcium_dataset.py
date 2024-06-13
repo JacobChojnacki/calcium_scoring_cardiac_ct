@@ -6,7 +6,6 @@ import yaml
 
 from lightning.pytorch.utilities.types import EVAL_DATALOADERS, TRAIN_DATALOADERS
 from monai.data import CacheDataset, DataLoader
-from monai.data.utils import pad_list_data_collate
 
 
 def make_calcium_dataset(
@@ -96,9 +95,13 @@ class CalciumScoreDataModule(L.LightningDataModule):
             )
 
     def train_dataloader(self) -> TRAIN_DATALOADERS:
-        return DataLoader(self.train_dataset, batch_size=self.batch_size, shuffle=True, 
-                          num_workers=self.num_workers,
-                          persistent_workers=True)
+        return DataLoader(
+            self.train_dataset,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=self.num_workers,
+            persistent_workers=True,
+        )
 
     def val_dataloader(self) -> EVAL_DATALOADERS:
         return DataLoader(self.val_dataset, batch_size=1, shuffle=False, num_workers=self.num_workers)

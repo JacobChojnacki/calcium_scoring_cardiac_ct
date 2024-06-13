@@ -5,7 +5,7 @@
             "name": "Prepare Data",
             "type": "debugpy",
             "request": "launch",
-            "module": "scripts.prepareData",
+            "module": "scripts.prepare_data",
             "args": ["--dataset_path", "./dataCaScore", "--output_path", "./dataCaScore/default"],
             "console": "integratedTerminal",
             "justMyCode": false,
@@ -20,7 +20,7 @@
             "name": "Segment with TotalSegmentator",
             "type": "debugpy",
             "request": "launch",
-            "module": "scripts.segmentWithTotalSegmentator",
+            "module": "scripts.segment_with_total_segmentator",
             "args": [
                 "--dataset_path", "./dataimages",
                 "--output_path", "./datasegmentedTotalSegmentator",
@@ -87,6 +87,66 @@
                 "hidden": false,
                 "group": "2. Pipeline",
                 "order": 3
+            }
+        },
+        {
+            "name": "Inference",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.inference",
+            "args": [
+                "--input_path",
+                ".data/CaScore/images/TEV1P2.nii.gz",
+                "--output_dir",
+                ".data/CaScore/model_output",
+                "--model_ckpt",
+                ".data/CaScore/model_ckpt/raunet_3D.ckpt",
+                "--type_of_input_data",
+                "3D",
+                "inference"
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "2. Pipeline",
+                "order": 4
+            }
+        },
+        {
+            "name": "Agatston",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "agatston.tools.agatston_tool",
+            "args": [
+                "--image_path",
+                ".data/CaScore/images/TEV1P2.nii.gz",
+                "--mask_path",
+                ".data/CaScore/raw_plaques/TEV1P2.nii.gz",
+                "--is_calcium_volume",
+                "False"
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "3. Optional",
+                "order": 1
+            }
+        },
+        {
+            "name": "Validate Predictions",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "scripts.calculate_agatston",
+            "args": [
+                "--image_folder_path",
+                ".data/CaScore/default/images",
+                "--inference_folder_path",
+                ".data/CaScore/predictions",
+                "--label_folder_path",
+                ".data/CaScore/default/raw_plaques"
+            ],
+            "presentation": {
+                "hidden": false,
+                "group": "3. Optional",
+                "order": 2
             }
         }
     ]

@@ -6,8 +6,8 @@ from typing import Union
 import fire
 import yaml
 
-from agatston.tools.dataTools import get_datalist_for_training
-from agatston.transforms.customTransforms import BinarizeLabelsd
+from agatston.tools.data_tools import get_datalist_for_training
+from agatston.transforms.custom_transforms import BinarizeLabelsd
 from monai.transforms import (
     Compose,
     CopyItemsd,
@@ -32,11 +32,11 @@ class ImageProcessor:
         setup_path: Union[str, Path],
         split_path: Union[str, Path],
         image_spacing: float = None,
-        output_dir: Union[str, Path] = "/home/jacob/Developer/others/saves",
-        output_ext: str = ".nii.gz",
-        writer: str = "NibabelWriter",
+        output_dir: Union[str, Path] = '/home/jacob/Developer/others/saves',
+        output_ext: str = '.nii.gz',
+        writer: str = 'NibabelWriter',
         resample: bool = False,
-        print_log: bool = True
+        print_log: bool = True,
     ):
         """
         Initialize ImageProcessor instance.
@@ -63,44 +63,48 @@ class ImageProcessor:
         self._image_key = 'images'
         self._labels_key = 'labels'
         self._raw_plaque_key = 'raw_plaques' if self.image_spacing is None else None
-        self._transformations = [
-            LoadImaged(keys=[self._image_key, self._labels_key]),
-            EnsureTyped(keys=[self._image_key, self._labels_key]),
-            EnsureChannelFirstd(keys=[self._image_key, self._labels_key]),
-            BinarizeLabelsd(keys=self._labels_key),
-            Spacingd(keys=[self._image_key, self._labels_key],
-                     pixdim=(self.image_spacing, self.image_spacing, self.image_spacing),
-                     mode=('bilinear', 'nearest')
-            ),
-            Orientationd(keys=[self._image_key, self._labels_key], axcodes='RAS'),
-            SaveImaged(
-                keys=[self._image_key],
-                output_postfix="",
-                output_dir=self.output_dir,
-                output_ext=self.output_ext,
-                writer=self.writer,
-                resample=self.resample,
-                print_log=self.print_log
-            ),
-            ScaleIntensityRanged(keys=[self._image_key], a_min=-200, a_max=1300, b_min=0, b_max=1, clip=True),
-        ] if self._raw_plaque_key is None else [
-            LoadImaged(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
-            EnsureTyped(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
-            EnsureChannelFirstd(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
-            BinarizeLabelsd(keys=[self._labels_key, self._raw_plaque_key]),
-            Orientationd(keys=[self._image_key, self._labels_key, self._raw_plaque_key], axcodes='RAS'),
-            SaveImaged(
-                keys=[self._image_key],
-                output_postfix="",
-                output_dir=self.output_dir,
-                output_ext=self.output_ext,
-                writer=self.writer,
-                resample=self.resample,
-                print_log=self.print_log
-            ),
-            ScaleIntensityRanged(keys=[self._image_key], a_min=-200, a_max=1300, b_min=0, b_max=1, clip=True),
-        ]
-
+        self._transformations = (
+            [
+                LoadImaged(keys=[self._image_key, self._labels_key]),
+                EnsureTyped(keys=[self._image_key, self._labels_key]),
+                EnsureChannelFirstd(keys=[self._image_key, self._labels_key]),
+                BinarizeLabelsd(keys=self._labels_key),
+                Spacingd(
+                    keys=[self._image_key, self._labels_key],
+                    pixdim=(self.image_spacing, self.image_spacing, self.image_spacing),
+                    mode=('bilinear', 'nearest'),
+                ),
+                Orientationd(keys=[self._image_key, self._labels_key], axcodes='RAS'),
+                SaveImaged(
+                    keys=[self._image_key],
+                    output_postfix='',
+                    output_dir=self.output_dir,
+                    output_ext=self.output_ext,
+                    writer=self.writer,
+                    resample=self.resample,
+                    print_log=self.print_log,
+                ),
+                ScaleIntensityRanged(keys=[self._image_key], a_min=-200, a_max=1300, b_min=0, b_max=1, clip=True),
+            ]
+            if self._raw_plaque_key is None
+            else [
+                LoadImaged(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
+                EnsureTyped(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
+                EnsureChannelFirstd(keys=[self._image_key, self._labels_key, self._raw_plaque_key]),
+                BinarizeLabelsd(keys=[self._labels_key, self._raw_plaque_key]),
+                Orientationd(keys=[self._image_key, self._labels_key, self._raw_plaque_key], axcodes='RAS'),
+                SaveImaged(
+                    keys=[self._image_key],
+                    output_postfix='',
+                    output_dir=self.output_dir,
+                    output_ext=self.output_ext,
+                    writer=self.writer,
+                    resample=self.resample,
+                    print_log=self.print_log,
+                ),
+                ScaleIntensityRanged(keys=[self._image_key], a_min=-200, a_max=1300, b_min=0, b_max=1, clip=True),
+            ]
+        )
         self.basic_transformations = self._transformations
 
     def preprocess(self) -> None:
@@ -136,7 +140,8 @@ class ImageProcessor:
 
         if (output_dir / self._image_key).exists():
             logging.info(
-                f'Folders {self._image_key} and {self._labels_key} already exist. The images will be overwritten.')
+                f'Folders {self._image_key} and {self._labels_key} already exist. The images will be overwritten.'
+            )
 
         setup_specific_transformations = []
 
@@ -148,7 +153,6 @@ class ImageProcessor:
 
         for batch in tqdm(sum(list(datalist.values()), []), desc='Preprocessing'):
             transforms(batch)
-
             key = list(datalist.keys())[batch['folder']]
             id_ = Path(batch[self._image_key]).name.split('.')[0]
             sample_dict = {
@@ -156,11 +160,11 @@ class ImageProcessor:
                 self._labels_key: str(output_dir / f'{self._labels_key}_setup_{setup_number}' / f'{id_}.nii.gz'),
             }
             if self.image_spacing is None:
-                sample_dict[self._raw_plaque_key] = str(
-                    output_dir / f'{self._raw_plaque_key}_setup_{setup_number}' / f'{id_}.nii.gz'),
+                sample_dict[self._raw_plaque_key] = (
+                    str(output_dir / f'{self._raw_plaque_key}_setup_{setup_number}' / f'{id_}.nii.gz'),
+                )
 
             preprocessed_data_paths[key] = preprocessed_data_paths.get(key, []) + [sample_dict]
-
         with open(datalist_path, 'w') as file:
             yaml.safe_dump(preprocessed_data_paths, file)
 

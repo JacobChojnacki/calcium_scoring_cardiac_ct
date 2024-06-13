@@ -38,7 +38,6 @@ data:
     cache_rate: 1.0
     num_workers: 15
     transforms_train:
-      class_path: agatston.transforms.standardTransforms.Transformations2D
+      class_path: agatston.transforms.standard_transforms.Transformations2D
     transforms_val:
-      class_path: agatston.transforms.standardTransforms.TransformationsVal
-
+      class_path: agatston.transforms.standard_transforms.TransformationsVal

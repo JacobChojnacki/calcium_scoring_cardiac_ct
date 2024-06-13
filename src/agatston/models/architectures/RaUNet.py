@@ -65,12 +65,11 @@ class UpConv(nn.Module):
         in_channels: int,
         out_channels: int,
         kernel_size: int = 3,
-        strides:int = 2,
+        strides: int = 2,
         dropout=0.0,
     ) -> torch.Tensor:
         super().__init__()
-        self.up_sample = nn.Upsample(scale_factor=2,
-                                     mode='nearest')
+        self.up_sample = nn.Upsample(scale_factor=2, mode='nearest')
 
         self.conv = Convolution(
             spatial_dims,
@@ -102,13 +101,9 @@ class UpConv(nn.Module):
         x_up: torch.Tensor = self.up(x)
         return x_up
 
+
 class AttentionBlock(nn.Module):
-    def __init__(self,
-                 spatial_dims: int,
-                 f_int: int,
-                 f_g: int,
-                 f_l: int,
-                 dropout=0.0):
+    def __init__(self, spatial_dims: int, f_int: int, f_g: int, f_l: int, dropout=0.0):
         super().__init__()
         self.W_g = nn.Sequential(
             ResidualUnit(
@@ -148,7 +143,6 @@ class AttentionBlock(nn.Module):
             Norm[Norm.BATCH, spatial_dims](1),
             nn.Sigmoid(),
         )
-
         self.relu = nn.ReLU()
 
     def forward(self, g: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
